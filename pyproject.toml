@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xiaozhi-esp32-adapter"
+version = "1.0.0"
+description = "OpenClaw adapter for xiaozhi-esp32-server"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "OpenClaw Contributors", email = "openclaw@github.com"},
+]
+keywords = [
+    "xiaozhi",
+    "esp32",
+    "openclaw",
+    "websocket",
+    "iot",
+    "smart-home",
+    "ai-assistant",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "websockets>=12.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+]
+
+[project.urls]
+Homepage = "https://github.com/openclaw/xiaozhi-esp32-adapter"
+Repository = "https://github.com/openclaw/xiaozhi-esp32-adapter"
+"Bug Tracker" = "https://github.com/openclaw/xiaozhi-esp32-adapter/issues"
+
+[tool.setuptools]
+packages = ["xiaozhi_openclaw"]
+
+[tool.setuptools.package-data]
+xiaozhi_openclaw = ["py.typed"]

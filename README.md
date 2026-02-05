@@ -1,60 +1,62 @@
-# xiaozhi-esp32 OpenClaw Adapter
+# xiaozhi-openclaw-adapter
 
-> **小志 ESP32 服务器 OpenClaw 适配器** - 为小志服务器提供 OpenClaw 插件通信能力
+> **Xiaozhi ESP32 Server OpenClaw Adapter** - Provides OpenClaw plugin communication capabilities for xiaozhi-esp32-server
 
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-## 📖 简介
+**[中文文档](README_zh.md)**
 
-这是一个 [xiaozhi-esp32-server](https://github.com/xiaozhi-esp32-server) 的附加组件，提供 WebSocket 服务器用于接收来自 OpenClaw 插件的工具调用请求。
+## Overview
 
-当配合 [@openclaw/xiaozhi](https://github.com/openclaw/xiaozhi-openclaw-plugin) 插件使用时，可以实现：
+This is an add-on component for [xiaozhi-esp32-server](https://github.com/xiaozhi-esp32-server) that provides a WebSocket server to receive tool call requests from OpenClaw plugins.
 
-- 📤 OpenClaw 通过小志发送消息到各种渠道（Telegram、Discord、微信等）
-- 🏠 OpenClaw 控制连接到小志的 IoT 设备
-- 🤖 OpenClaw 执行/查询小志 Agent 任务
+When used with the [@dsw0000/xiaozhi](https://github.com/dsw0000/xiaozhi-openclaw-plugin) plugin, it enables:
 
-## ✨ 功能特性
+- 📤 OpenClaw to send messages via Xiaozhi to various channels (Telegram, Discord, WeChat, etc.)
+- 🏠 OpenClaw to control IoT devices connected to Xiaozhi
+- 🤖 OpenClaw to execute/query Xiaozhi Agent tasks
 
-- 🔌 **WebSocket 服务器** - 基于 websockets 的异步服务器
-- 📡 **JSON-RPC 2.0 协议** - 标准化的远程调用协议
-- 🔐 **认证支持** - 可选的 Bearer Token 认证
-- 🛠️ **三个工具包装器** - send_message、device_control、agent_task
-- 🔧 **统一工具集成** - 与小志现有工具系统无缝集成
+## Features
 
-## 📋 系统要求
+- 🔌 **WebSocket Server** - Async server based on websockets
+- 📡 **JSON-RPC 2.0 Protocol** - Standardized remote call protocol
+- 🔐 **Authentication Support** - Optional Bearer Token authentication
+- 🛠️ **Three Tool Wrappers** - send_message, device_control, agent_task
+- 🔧 **Unified Tool Integration** - Seamlessly integrates with Xiaozhi's existing tool system
+
+## Requirements
 
 - **Python**: >= 3.8
-- **xiaozhi-esp32-server**: 任意版本
-- **OpenClaw**: >= 2026.2.0 (配合 @openclaw/xiaozhi 插件)
+- **xiaozhi-esp32-server**: Any version
+- **OpenClaw**: >= 2026.2.0 (used with @dsw0000/xiaozhi plugin)
 
-## 🚀 安装
+## Installation
 
-### 方式一：手动安装（推荐）
+### Method 1: Manual Installation (Recommended)
 
 ```bash
 cd /path/to/xiaozhi-esp32-server/main/xiaozhi-server
-pip install -e /path/to/xiaozhi-esp32-adapter
+pip install -e /path/to/xiaozhi-openclaw-adapter
 ```
 
-### 方式二：从 GitHub 安装
+### Method 2: Install from GitHub
 
 ```bash
-pip install git+https://github.com/openclaw/xiaozhi-esp32-adapter.git
+pip install git+https://github.com/dsw0000/xiaozhi-openclaw-adapter.git
 ```
 
-### 方式三：开发模式安装
+### Method 3: Development Mode Installation
 
 ```bash
-git clone https://github.com/openclaw/xiaozhi-esp32-adapter.git
-cd xiaozhi-esp32-adapter
+git clone https://github.com/dsw0000/xiaozhi-openclaw-adapter.git
+cd xiaozhi-openclaw-adapter
 pip install -e .
 ```
 
-## ⚙️ 配置
+## Configuration
 
-配置文件：`xiaozhi-esp32-server/main/xiaozhi-server/data/.openclaw_adapter_settings.json`
+Config file: `xiaozhi-esp32-server/main/xiaozhi-server/data/.openclaw_adapter_settings.json`
 
 ```json
 {
@@ -67,107 +69,107 @@ pip install -e .
 }
 ```
 
-### 配置说明
+### Configuration Parameters
 
-| 参数 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `enabled` | boolean | ✅ | true | 是否启用 WebSocket 服务器 |
-| `host` | string | ✅ | "0.0.0.0" | 监听地址 |
-| `port` | number | ✅ | 8080 | 监听端口 |
-| `authToken` | string | ❌ | null | 认证令牌（与插件保持一致） |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `enabled` | boolean | ✅ | true | Whether to enable WebSocket server |
+| `host` | string | ✅ | "0.0.0.0" | Listen address |
+| `port` | number | ✅ | 8080 | Listen port |
+| `authToken` | string | ❌ | null | Authentication token (keep consistent with plugin) |
 
-## 🔧 集成到小志服务器
+## Integration with Xiaozhi Server
 
-### 方法一：作为附加组件
+### Method 1: As an Add-on Component
 
-将适配器复制到小志服务器的 `tools` 目录：
+Copy the adapter to the `tools` directory of the Xiaozhi server:
 
 ```bash
 cp -r xiaozhi_openclaw /path/to/xiaozhi-esp32-server/main/xiaozhi-server/core/providers/tools/
 ```
 
-### 方法二：作为独立包安装
+### Method 2: Install as a Standalone Package
 
 ```bash
 cd /path/to/xiaozhi-esp32-server/main/xiaozhi-server
-pip install -e xiaozhi-esp32-adapter
+pip install -e xiaozhi-openclaw-adapter
 ```
 
-然后修改 `core/providers/tools/__init__.py` 添加导入：
+Then modify `core/providers/tools/__init__.py` to add imports:
 
 ```python
 from .openclaw import OpenClawWebSocketServer, get_openclaw_config
 ```
 
-## 📡 WebSocket 服务器
+## WebSocket Server
 
-服务器启动后将在 `ws://host:port/ws` 监听连接。
+After the server starts, it will listen on `ws://host:port/ws`.
 
-### 通信协议
+### Communication Protocol
 
-使用 JSON-RPC 2.0 协议，详见 [@openclaw/xiaozhi](https://github.com/openclaw/xiaozhi-openclaw-plugin) 插件文档。
+Uses JSON-RPC 2.0 protocol. See [@dsw0000/xiaozhi](https://github.com/dsw0000/xiaozhi-openclaw-plugin) plugin documentation for details.
 
-### 支持的方法
+### Supported Methods
 
-- `tools/call` - 执行工具调用
-- `ping` - 心跳检测
+- `tools/call` - Execute tool calls
+- `ping` - Heartbeat detection
 
-## 🛠️ 提供的工具
+## Provided Tools
 
-适配器在小志服务器的工具系统中注册以下工具：
+The adapter registers the following tools in the Xiaozhi server's tool system:
 
 ### 1. xiaozhi_send_message
 
-发送消息到配置的渠道。
+Send a message to a configured channel.
 
-**参数：**
-- `to` (string, 必填) - 接收者标识符
-- `text` (string, 必填) - 消息内容
-- `channel` (string, 可选) - 渠道名称
+**Parameters:**
+- `to` (string, required) - Recipient identifier
+- `text` (string, required) - Message content
+- `channel` (string, optional) - Channel name
 
 ### 2. xiaozhi_device_control
 
-控制 IoT 设备。
+Control IoT devices.
 
-**参数：**
-- `deviceId` (string, 必填) - 设备标识符
-- `action` (string, 必填) - 操作类型
-- `value` (number, 可选) - 设置值
+**Parameters:**
+- `deviceId` (string, required) - Device identifier
+- `action` (string, required) - Action type
+- `value` (number, optional) - Value to set
 
 ### 3. xiaozhi_agent_task
 
-执行/查询 Agent 任务。
+Execute/query Agent tasks.
 
-**参数：**
-- `action` (string, 必填) - 操作类型
-- `taskId` (string, 可选) - 任务 ID
-- `prompt` (string, 可选) - 任务提示
+**Parameters:**
+- `action` (string, required) - Action type
+- `taskId` (string, optional) - Task ID
+- `prompt` (string, optional) - Task prompt
 
-## 🧪 测试
+## Testing
 
 ```bash
-# 克隆仓库
-git clone https://github.com/openclaw/xiaozhi-esp32-adapter.git
-cd xiaozhi-esp32-adapter
+# Clone repository
+git clone https://github.com/dsw0000/xiaozhi-openclaw-adapter.git
+cd xiaozhi-openclaw-adapter
 
-# 安装开发依赖
+# Install development dependencies
 pip install -e ".[test]"
 
-# 运行测试
+# Run tests
 pytest tests/
 ```
 
-## 📦 项目结构
+## Project Structure
 
 ```
-xiaozhi-esp32-adapter/
+xiaozhi-openclaw-adapter/
 ├── xiaozhi_openclaw/
 │   ├── __init__.py
-│   ├── config.py                 # 配置加载器
-│   ├── protocol.py               # JSON-RPC 2.0 协议
-│   ├── tool_executor.py          # 工具执行器
-│   ├── websocket_server.py       # WebSocket 服务器
-│   ├── executor.py               # 统一工具管理器执行器
+│   ├── config.py                 # Configuration loader
+│   ├── protocol.py               # JSON-RPC 2.0 protocol
+│   ├── tool_executor.py          # Tool executor
+│   ├── websocket_server.py       # WebSocket server
+│   ├── executor.py               # Unified tool manager executor
 │   └── tools/
 │       ├── __init__.py
 │       ├── send_message.py
@@ -179,23 +181,23 @@ xiaozhi-esp32-adapter/
 │   ├── test_config.py
 │   ├── test_tool_executor.py
 │   └── TEST_SUMMARY.md
-├── setup.py                      # 包配置
-├── pyproject.toml                # 现代 Python 项目配置
+├── setup.py                      # Package configuration
+├── pyproject.toml                # Modern Python project configuration
 ├── README.md
 └── LICENSE
 ```
 
-## 🔌 与 OpenClaw 插件配合使用
+## Usage with OpenClaw Plugin
 
-### 架构图
+### Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        OpenClaw Gateway                         │
 │  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  @openclaw/xiaozhi 插件 (WebSocket 客户端)               │  │
-│  │  - 主动连接到小志 WebSocket 服务器                          │  │
-│  │  - 暴露工具给 Agent 使用                                     │  │
+│  │  @dsw0000/xiaozhi Plugin (WebSocket Client)                │  │
+│  │  - Actively connects to Xiaozhi WebSocket server            │  │
+│  │  - Exposes tools for Agent use                              │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 └───────────────────────────┬──────────────────────────────────────────┘
                             │
@@ -207,72 +209,75 @@ xiaozhi-esp32-adapter/
 ┌───────────────────────────┴──────────────────────────────────────────┐
 │                    xiaozhi-esp32-server                          │
 │  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  xiaozhi-esp32 OpenClaw 适配器 (WebSocket 服务器)          │  │
-│  │  - 监听 ws://host:8080/ws                                   │  │
-│  │  - 处理来自 OpenClaw 的工具调用                             │  │
+│  │  xiaozhi-openclaw-adapter (WebSocket Server)                │  │
+│  │  - Listens on ws://host:8080/ws                             │  │
+│  │  - Handles tool calls from OpenClaw                         │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 工作流程
+### Workflow
 
 ```
-用户 → 小志说话
+User → Speak to Xiaozhi
      ↓
-小志 ASR + Agent 判断
+Xiaozhi ASR + Agent determines intent
      ↓
-需要调用 OpenClaw 工具
+Need to call OpenClaw tool
      ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 小志通过统一工具系统调用 OpenClaw 工具                      │
+│ Xiaozhi calls OpenClaw tool via unified tool system         │
 │                                                             │
 │ xiaozhi_openclaw.executor:                                   │
-│   ├─ 调用工具函数 (send_message, device_control, etc.)      │
-│   ├─ 创建任务                                               │
-│   └─ 返回结果                                               │
+│   ├─ Call tool function (send_message, device_control, etc.)│
+│   ├─ Create task                                            │
+│   └─ Return result                                          │
 └─────────────────────────────────────────────────────────────┘
      ↓
-OpenClaw 执行工具 (发送消息/控制设备/执行任务)
+OpenClaw executes tool (send message/control device/execute task)
      ↓
-结果返回给小志
+Result returns to Xiaozhi
      ↓
-小志 TTS 播报
+Xiaozhi TTS broadcast
 ```
 
-## 🐛 故障排查
+## Troubleshooting
 
-### WebSocket 服务器无法启动
+### WebSocket server cannot start
 
-1. 确认端口未被占用：`lsof -i :8080`
-2. 检查防火墙设置
-3. 查看小志服务器日志
+1. Confirm port is not in use: `lsof -i :8080`
+2. Check firewall settings
+3. Check Xiaozhi server logs
 
-### OpenClaw 插件无法连接
+### OpenClaw plugin cannot connect
 
-1. 确认 WebSocket 服务器已启动
-2. 检查 `serverUrl` 配置正确
-3. 验证 `authToken` 一致（如果使用）
+1. Confirm WebSocket server is running
+2. Check `serverUrl` configuration is correct
+3. Verify `authToken` matches (if used)
 
-### 工具调用失败
+### Tool call failed
 
-1. 查看小志服务器日志
-2. 确认工具已在系统中注册
-3. 验证工具参数正确
+1. Check Xiaozhi server logs
+2. Confirm tool is registered in the system
+3. Verify tool parameters are correct
 
-## 📄 许可证
+## License
 
 [MIT](LICENSE)
 
-## 🙏 致谢
+## Acknowledgments
 
-- [OpenClaw](https://github.com/openclaw/openclaw) - 强大的 AI Agent 网关
-- [xiaozhi-esp32-server](https://github.com/xiaozhi-esp32-server) - ESP32 智能硬件服务器
+- [OpenClaw](https://github.com/anthropics/openclaw) - Powerful AI Agent gateway
+- [xiaozhi-esp32-server](https://github.com/xiaozhi-esp32-server) - ESP32 smart hardware server
 
-## 📮 联系方式
+## Related Projects
 
-- GitHub Issues: https://github.com/openclaw/xiaozhi-esp32-adapter/issues
-- OpenClaw Discord: https://discord.gg/openclaw
+- [xiaozhi-openclaw-plugin](https://github.com/dsw0000/xiaozhi-openclaw-plugin) - OpenClaw plugin for xiaozhi integration
+
+## Contact
+
+- GitHub Issues: https://github.com/dsw0000/xiaozhi-openclaw-adapter/issues
 
 ---
 
-**注意**: 此适配器需要配合 [@openclaw/xiaozhi](https://github.com/openclaw/xiaozhi-openclaw-plugin) 插件使用。
+**Note**: This adapter needs to be used with the [@dsw0000/xiaozhi](https://github.com/dsw0000/xiaozhi-openclaw-plugin) plugin.

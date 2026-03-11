@@ -1,0 +1,86 @@
+{
+  "name": "@evalengine/xiaozhi",
+  "version": "1.0.0",
+  "description": "Xiaozhi (小智) ESP32 integration plugin for OpenClaw - WebSocket client for xiaozhi-esp32-server",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "xiaozhi",
+    "esp32",
+    "websocket",
+    "iot",
+    "smart-home",
+    "ai-assistant"
+  ],
+  "author": "EvalEngine Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/evalengine/xiaozhi-openclaw-adapter.git",
+    "directory": "skill"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.2.0"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "zod": "^4.3.6",
+    "@sinclair/typebox": "^0.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "openclaw": {
+    "id": "xiaozhi",
+    "name": "Xiaozhi Integration",
+    "description": "WebSocket client for xiaozhi-esp32-server bidirectional communication",
+    "version": "1.0.0",
+    "config": {
+      "uiHints": {
+        "serverUrl": {
+          "label": "Server URL",
+          "help": "WebSocket adapter URL (e.g., ws://your-server:8080/ws)",
+          "placeholder": "ws://localhost:8080/ws"
+        },
+        "authToken": {
+          "label": "Auth Token",
+          "help": "Optional authentication token (must match adapter authToken config)",
+          "sensitive": true
+        },
+        "reconnectInterval": {
+          "label": "Reconnect Interval (ms)",
+          "help": "Time between reconnection attempts",
+          "advanced": true
+        },
+        "maxReconnectAttempts": {
+          "label": "Max Reconnect Attempts",
+          "help": "Maximum number of reconnection attempts before giving up",
+          "advanced": true
+        },
+        "heartbeatInterval": {
+          "label": "Heartbeat Interval (ms)",
+          "help": "Heartbeat/ping interval",
+          "advanced": true
+        }
+      }
+    }
+  }
+}

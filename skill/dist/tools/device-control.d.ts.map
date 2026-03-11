@@ -1,0 +1,1 @@
+{"version":3,"file":"device-control.d.ts","sourceRoot":"","sources":["../../src/tools/device-control.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,iBAAiB,EAAE,MAAM,qBAAqB,CAAC;AAC7D,OAAO,KAAK,EAAE,sBAAsB,EAAE,MAAM,wBAAwB,CAAC;AAErE,eAAO,MAAM,wBAAwB,GAAI,QAAQ,sBAAsB,EAAE,KAAK,iBAAiB;;;;;;;;;iBAiB1E,MAAM,UAAU,MAAM,CAAC,MAAM,EAAE,OAAO,CAAC;;;;;;;;;;;;;;;CAkB1D,CAAC"}

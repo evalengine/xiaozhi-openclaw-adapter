@@ -1,0 +1,36 @@
+{
+  "id": "xiaozhi",
+  "name": "Xiaozhi Integration",
+  "description": "WebSocket client for xiaozhi-esp32-server bidirectional communication",
+  "version": "1.0.1",
+  "extensions": ["./dist/index.js"],
+  "config": {
+    "uiHints": {
+      "serverUrl": {
+        "label": "Server URL",
+        "help": "WebSocket adapter URL (e.g., ws://your-server:8080/ws)",
+        "placeholder": "ws://localhost:8080/ws"
+      },
+      "authToken": {
+        "label": "Auth Token",
+        "help": "Optional authentication token (must match adapter authToken config)",
+        "sensitive": true
+      },
+      "reconnectInterval": {
+        "label": "Reconnect Interval (ms)",
+        "help": "Time between reconnection attempts",
+        "advanced": true
+      },
+      "maxReconnectAttempts": {
+        "label": "Max Reconnect Attempts",
+        "help": "Maximum number of reconnection attempts before giving up",
+        "advanced": true
+      },
+      "heartbeatInterval": {
+        "label": "Heartbeat Interval (ms)",
+        "help": "Heartbeat/ping interval",
+        "advanced": true
+      }
+    }
+  }
+}

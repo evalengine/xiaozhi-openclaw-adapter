@@ -9,7 +9,8 @@
     "properties": {
       "serverUrl": {
         "type": "string",
-        "description": "WebSocket adapter URL (e.g., ws://your-server:8080/ws)"
+        "description": "WebSocket adapter URL (e.g., ws://your-server:8080/ws)",
+        "default": "ws://localhost:8080/ws"
       },
       "authToken": {
         "type": "string",
@@ -28,7 +29,7 @@
         "description": "Heartbeat/ping interval (ms)"
       }
     },
-    "required": ["serverUrl"]
+    "required": []
   },
   "config": {
     "uiHints": {

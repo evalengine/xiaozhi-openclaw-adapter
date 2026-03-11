@@ -1,12 +1,13 @@
 """OpenClaw WebSocket服务器
 
 接收来自OpenClaw插件的WebSocket连接，处理工具调用请求。
+支持将通知广播回OpenClaw插件（反向通信）。
 """
 
 import asyncio
 import json
 import websockets
-from typing import Optional, Set
+from typing import Optional, Set, Any, Dict
 from websockets.server import WebSocketServerProtocol
 from .config import get_openclaw_config
 from .protocol import (
@@ -22,6 +23,18 @@ from config.logger import setup_logging
 TAG = __name__
 logger = setup_logging()
 
+# 全局单例，供工具模块获取服务器引用以实现反向通信
+_instance: Optional["OpenClawWebSocketServer"] = None
+
+
+def get_server_instance() -> Optional["OpenClawWebSocketServer"]:
+    """获取WebSocket服务器全局单例
+
+    Returns:
+        OpenClawWebSocketServer实例，若未启动则返回None
+    """
+    return _instance
+
 
 class OpenClawWebSocketServer:
     """OpenClaw WebSocket服务器"""
@@ -30,7 +43,7 @@ class OpenClawWebSocketServer:
         """初始化WebSocket服务器
 
         Args:
-            conn: 连接处理器实例
+            conn: 连接处理器实例（可为None，工具执行时通过device_id动态查找）
         """
         self.conn = conn
         self.config = get_openclaw_config()
@@ -40,7 +53,9 @@ class OpenClawWebSocketServer:
         self.executor = OpenClawToolExecutor(conn)
 
     async def start(self) -> None:
-        """启动WebSocket服务器"""
+        """启动WebSocket服务器，并注册为全局单例"""
+        global _instance
+
         if self.is_running:
             logger.bind(tag=TAG).warning("OpenClaw WebSocket服务器已在运行")
             return
@@ -64,6 +79,7 @@ class OpenClawWebSocketServer:
                 close_timeout=10,
             )
             self.is_running = True
+            _instance = self
             logger.bind(tag=TAG).info(f"OpenClaw WebSocket服务器已启动: ws://{host}:{port}/ws")
         except Exception as e:
             logger.bind(tag=TAG).error(f"启动OpenClaw WebSocket服务器失败: {e}")
@@ -72,6 +88,8 @@ class OpenClawWebSocketServer:
 
     async def stop(self) -> None:
         """停止WebSocket服务器"""
+        global _instance
+
         if not self.is_running:
             return
 
@@ -93,7 +111,53 @@ class OpenClawWebSocketServer:
             self.server = None
 
         self.is_running = False
+        if _instance is self:
+            _instance = None
         logger.bind(tag=TAG).info("OpenClaw WebSocket服务器已停止")
+
+    async def broadcast_notification(self, method: str, params: Dict[str, Any]) -> int:
+        """向所有已连接的OpenClaw客户端广播JSON-RPC通知
+
+        通知是无id的JSON-RPC消息，不需要响应。
+        用于小智 → OpenClaw 方向的主动推送。
+
+        Args:
+            method: 通知方法名（如 "message/send"）
+            params: 通知参数
+
+        Returns:
+            成功发送的客户端数量
+        """
+        if not self.clients:
+            logger.bind(tag=TAG).debug(f"无已连接的OpenClaw客户端，跳过广播: {method}")
+            return 0
+
+        notification = json.dumps({
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+        }, ensure_ascii=False)
+
+        sent_count = 0
+        dead_clients = set()
+
+        for client in self.clients.copy():
+            try:
+                await client.send(notification)
+                sent_count += 1
+            except websockets.exceptions.ConnectionClosed:
+                dead_clients.add(client)
+            except Exception as e:
+                logger.bind(tag=TAG).error(f"广播消息失败: {e}")
+                dead_clients.add(client)
+
+        # 清理已断开的连接
+        self.clients -= dead_clients
+
+        logger.bind(tag=TAG).debug(
+            f"广播通知 '{method}' 已发送至 {sent_count}/{len(self.clients) + sent_count} 个客户端"
+        )
+        return sent_count
 
     async def _handle_client(self, websocket: WebSocketServerProtocol) -> None:
         """处理客户端连接
@@ -101,7 +165,6 @@ class OpenClawWebSocketServer:
         Args:
             websocket: WebSocket连接对象
         """
-        client_id = id(websocket)
         remote_addr = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
 
         logger.bind(tag=TAG).info(f"新客户端连接: {remote_addr}")
@@ -109,6 +172,7 @@ class OpenClawWebSocketServer:
         # 验证认证令牌（如果配置了）
         if not await self._authenticate_client(websocket):
             logger.bind(tag=TAG).warning(f"客户端认证失败: {remote_addr}")
+            await websocket.close(1008, "Unauthorized")
             return
 
         self.clients.add(websocket)
@@ -206,7 +270,7 @@ class OpenClawWebSocketServer:
             except Exception:
                 pass
 
-    async def _handle_tools_call(self, request) ->:
+    async def _handle_tools_call(self, request):
         """处理tools/call方法
 
         Args:

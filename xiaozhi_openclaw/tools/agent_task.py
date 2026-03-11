@@ -1,42 +1,51 @@
 """Agent任务工具包装器
 
-提供xiaozhi_agent_task工具的实现。
+通过小智服务器的HTTP chat API执行Agent任务。
+实现方向：OpenClaw → 小智 → LLM Agent
 """
 
+import time
 import asyncio
-from typing import Dict, Any, Optional
+import aiohttp
+from typing import Optional, Dict, Any
 from plugins_func.register import Action, ActionResponse
 from config.logger import setup_logging
 
 TAG = __name__
 logger = setup_logging()
 
-
-# 简单的任务存储（生产环境应使用数据库或缓存）
+# 任务状态存储：task_id → {status, result, created_at, device_id, prompt}
 _task_store: Dict[str, Dict[str, Any]] = {}
 
 
 async def agent_task(
-    action: str, task_id: Optional[str] = None, prompt: Optional[str] = None, **kwargs
+    action: str,
+    task_id: Optional[str] = None,
+    prompt: Optional[str] = None,
+    device_id: Optional[str] = None,
+    **kwargs,
 ) -> ActionResponse:
-    """执行或查询Agent任务
+    """通过小智服务器执行或查询Agent任务
+
+    execute: 通过小智HTTP chat API提交prompt，异步执行并返回taskId。
+             可用 status 操作轮询结果。
+    status:  查询任务状态和结果。
+    cancel:  标记任务为已取消（若任务仍在运行则无法中断）。
 
     Args:
-        action: 操作类型（execute, status, cancel）
-        task_id: 任务ID（用于status和cancel操作）
-        prompt: 任务提示（用于execute操作）
-        **kwargs: 其他参数
+        action: 操作类型（execute / status / cancel）
+        task_id: 任务ID（status 和 cancel 操作必须提供）
+        prompt: 任务提示词（execute 操作必须提供）
+        device_id: 小智设备MAC地址（execute 时指定哪个小智设备处理任务，
+                   留空使用配置中的默认设备）
+        **kwargs: 其他参数（忽略）
 
     Returns:
         ActionResponse对象
     """
     try:
-        logger.bind(tag=TAG).info(
-            f"Agent任务: action={action}, task_id={task_id}, prompt={prompt[:50] if prompt else None}..."
-        )
-
         if action == "execute":
-            return await _execute_task(prompt)
+            return await _execute_task(prompt, device_id)
         elif action == "status":
             return await _get_task_status(task_id)
         elif action == "cancel":
@@ -55,11 +64,14 @@ async def agent_task(
         )
 
 
-async def _execute_task(prompt: str) -> ActionResponse:
-    """执行新任务
+async def _execute_task(
+    prompt: Optional[str], device_id: Optional[str]
+) -> ActionResponse:
+    """提交任务到小智，异步执行并返回taskId
 
     Args:
-        prompt: 任务提示
+        prompt: 任务提示词
+        device_id: 小智设备ID
 
     Returns:
         ActionResponse对象
@@ -70,34 +82,92 @@ async def _execute_task(prompt: str) -> ActionResponse:
             response="execute 操作需要提供 prompt 参数",
         )
 
-    # 生成任务ID
-    task_id = f"task_{asyncio.get_event_loop().time()}"
+    from ..config import get_openclaw_config
+    config = get_openclaw_config()
 
-    # 存储任务信息
+    target_device = device_id or config._config.get("xiaozhi", {}).get("defaultDeviceId", "")
+    if not target_device:
+        return ActionResponse(
+            action=Action.ERROR,
+            response="未指定小智设备ID。请在请求中传入 device_id 参数，"
+                     "或在配置文件中设置 xiaozhi.defaultDeviceId",
+        )
+
+    task_id = f"task_{int(time.time() * 1000)}"
     _task_store[task_id] = {
         "id": task_id,
         "prompt": prompt,
+        "device_id": target_device,
         "status": "running",
-        "created_at": asyncio.get_event_loop().time(),
+        "result": None,
+        "created_at": time.time(),
     }
 
-    # TODO: 实现实际的Agent任务执行逻辑
-    # 这里可以创建新的Agent会话来执行prompt
-    # 或者将任务提交给任务队列
+    logger.bind(tag=TAG).info(
+        f"创建Agent任务: {task_id}, device={target_device}, prompt={prompt[:80]}..."
+    )
 
-    logger.bind(tag=TAG).info(f"创建新任务: {task_id}, prompt: {prompt[:50]}...")
-
-    # 示例：模拟异步执行
-    asyncio.create_task(_simulate_task_execution(task_id, prompt))
+    # 异步执行任务，不阻塞当前调用
+    asyncio.create_task(_run_task(task_id, target_device, prompt, config.http_port))
 
     return ActionResponse(
-        action=Action.REQLLM,
-        response=f"任务已创建: {task_id}",
+        action=Action.RESPONSE,
+        response=f"任务已提交，任务ID: {task_id}。使用 status 操作查询结果。",
     )
 
 
-async def _get_task_status(task_id: str) -> ActionResponse:
-    """获取任务状态
+async def _run_task(
+    task_id: str, device_id: str, prompt: str, http_port: int
+) -> None:
+    """在后台通过小智HTTP chat API执行任务
+
+    Args:
+        task_id: 任务ID
+        device_id: 小智设备ID
+        prompt: 任务提示词
+        http_port: 小智HTTP端口
+    """
+    url = f"http://127.0.0.1:{http_port}/xiaozhi/chat"
+    payload = {"device_id": device_id, "text": prompt}
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url, json=payload, timeout=aiohttp.ClientTimeout(total=120)
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data.get("success"):
+                        result = data.get("response", "")
+                        _task_store[task_id]["status"] = "completed"
+                        _task_store[task_id]["result"] = result
+                        logger.bind(tag=TAG).info(
+                            f"任务完成: {task_id}, result={result[:80]}..."
+                        )
+                    else:
+                        err = data.get("error", "未知错误")
+                        _task_store[task_id]["status"] = "failed"
+                        _task_store[task_id]["result"] = err
+                        logger.bind(tag=TAG).error(f"任务失败: {task_id}, error={err}")
+                else:
+                    _task_store[task_id]["status"] = "failed"
+                    _task_store[task_id]["result"] = f"HTTP {resp.status}"
+    except aiohttp.ClientConnectorError as e:
+        _task_store[task_id]["status"] = "failed"
+        _task_store[task_id]["result"] = f"无法连接小智服务器: {e}"
+        logger.bind(tag=TAG).error(f"任务连接失败: {task_id}, error={e}")
+    except asyncio.TimeoutError:
+        _task_store[task_id]["status"] = "failed"
+        _task_store[task_id]["result"] = "任务超时（120秒）"
+        logger.bind(tag=TAG).error(f"任务超时: {task_id}")
+    except Exception as e:
+        _task_store[task_id]["status"] = "failed"
+        _task_store[task_id]["result"] = str(e)
+        logger.bind(tag=TAG).error(f"任务异常: {task_id}, error={e}")
+
+
+async def _get_task_status(task_id: Optional[str]) -> ActionResponse:
+    """查询任务状态和结果
 
     Args:
         task_id: 任务ID
@@ -118,14 +188,34 @@ async def _get_task_status(task_id: str) -> ActionResponse:
             response=f"任务不存在: {task_id}",
         )
 
-    return ActionResponse(
-        action=Action.RESPONSE,
-        response=f"任务 {task_id} 状态: {task['status']}",
-    )
+    status = task["status"]
+    result = task.get("result")
+
+    if status == "completed" and result:
+        return ActionResponse(
+            action=Action.RESPONSE,
+            response=f"任务 {task_id} 已完成。结果: {result}",
+        )
+    elif status == "failed":
+        return ActionResponse(
+            action=Action.RESPONSE,
+            response=f"任务 {task_id} 失败: {result or '未知错误'}",
+        )
+    elif status == "cancelled":
+        return ActionResponse(
+            action=Action.RESPONSE,
+            response=f"任务 {task_id} 已取消",
+        )
+    else:
+        elapsed = int(time.time() - task["created_at"])
+        return ActionResponse(
+            action=Action.RESPONSE,
+            response=f"任务 {task_id} 正在执行中（已运行 {elapsed} 秒）",
+        )
 
 
-async def _cancel_task(task_id: str) -> ActionResponse:
-    """取消任务
+async def _cancel_task(task_id: Optional[str]) -> ActionResponse:
+    """标记任务为已取消
 
     Args:
         task_id: 任务ID
@@ -146,29 +236,16 @@ async def _cancel_task(task_id: str) -> ActionResponse:
             response=f"任务不存在: {task_id}",
         )
 
-    # 更新任务状态
-    task["status"] = "cancelled"
+    if task["status"] in ("completed", "failed"):
+        return ActionResponse(
+            action=Action.RESPONSE,
+            response=f"任务 {task_id} 已结束（状态: {task['status']}），无需取消",
+        )
 
-    logger.bind(tag=TAG).info(f"任务已取消: {task_id}")
+    task["status"] = "cancelled"
+    logger.bind(tag=TAG).info(f"任务已标记取消: {task_id}")
 
     return ActionResponse(
         action=Action.RESPONSE,
         response=f"任务 {task_id} 已取消",
     )
-
-
-async def _simulate_task_execution(task_id: str, prompt: str) -> None:
-    """模拟任务执行（示例）
-
-    Args:
-        task_id: 任务ID
-        prompt: 任务提示
-    """
-    # 模拟任务执行延迟
-    await asyncio.sleep(2)
-
-    # 更新任务状态
-    if task_id in _task_store:
-        _task_store[task_id]["status"] = "completed"
-        _task_store[task_id]["result"] = f"已完成: {prompt[:50]}..."
-        logger.bind(tag=TAG).info(f"任务已完成: {task_id}")

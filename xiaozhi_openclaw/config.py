@@ -44,7 +44,10 @@ class OpenClawConfig:
                 "host": "0.0.0.0",
                 "port": 8080,
                 "authToken": None,
-            }
+            },
+            "xiaozhi": {
+                "httpPort": 8003,
+            },
         }
 
     def save_config(self) -> None:
@@ -76,6 +79,11 @@ class OpenClawConfig:
     def auth_token(self) -> Optional[str]:
         """认证令牌"""
         return self._config.get("websocketServer", {}).get("authToken")
+
+    @property
+    def http_port(self) -> int:
+        """小智HTTP服务器端口（用于chat API调用）"""
+        return self._config.get("xiaozhi", {}).get("httpPort", 8003)
 
     def reload(self) -> None:
         """重新加载配置"""

@@ -1,6 +1,6 @@
 {
-  "name": "@evalengine/xiaozhi",
-  "version": "1.0.2",
+  "name": "@liholiho/xiaozhi",
+  "version": "1.0.3",
   "description": "Xiaozhi (小智) ESP32 integration plugin for OpenClaw - WebSocket client for xiaozhi-esp32-server",
   "type": "module",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "openclaw",

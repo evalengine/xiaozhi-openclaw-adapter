@@ -26,6 +26,10 @@ export function createHeartbeatRequest(id: number): JsonRpcRequest {
   return { jsonrpc: "2.0", id, method: "ping" };
 }
 
+export function createMethodRequest(id: number, method: string, params: Record<string, unknown> = {}): JsonRpcRequest {
+  return { jsonrpc: "2.0", id, method, params };
+}
+
 export function isErrorResponse(r: JsonRpcResponse): r is JsonRpcResponseError {
   return "error" in r;
 }

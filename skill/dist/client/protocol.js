@@ -11,6 +11,9 @@ export function createToolCallRequest(id, toolName, args) {
 export function createHeartbeatRequest(id) {
     return { jsonrpc: "2.0", id, method: "ping" };
 }
+export function createMethodRequest(id, method, params = {}) {
+    return { jsonrpc: "2.0", id, method, params };
+}
 export function isErrorResponse(r) {
     return "error" in r;
 }

@@ -245,6 +245,9 @@ class OpenClawWebSocketServer:
                 response = await self._handle_tools_call(request)
             elif request.method == "ping":
                 response = create_success_response(request.id, {"pong": True})
+            elif request.method == "devices/list":
+                result = await self._handle_devices_list()
+                response = create_success_response(request.id, result)
             else:
                 response = create_error_response(
                     request.id,
@@ -307,6 +310,25 @@ class OpenClawWebSocketServer:
         result = await self.executor.execute_tool(tool_name, arguments)
 
         return create_success_response(request.id, result)
+
+    async def _handle_devices_list(self) -> dict:
+        """处理devices/list方法，返回当前已连接的设备列表"""
+        try:
+            from core.api.connection_registry import active_device_ids, get
+            devices = []
+            for device_id in active_device_ids():
+                conn = get(device_id)
+                if conn:
+                    devices.append({
+                        "device_id": device_id,
+                        "ip": conn.client_ip,
+                        "session_id": conn.session_id,
+                        "last_activity": conn.last_activity_time,
+                    })
+            return {"devices": devices, "count": len(devices)}
+        except Exception as e:
+            logger.bind(tag=TAG).error(f"获取设备列表失败: {e}")
+            return {"devices": [], "count": 0, "error": str(e)}
 
     def get_client_count(self) -> int:
         """获取当前连接的客户端数量"""

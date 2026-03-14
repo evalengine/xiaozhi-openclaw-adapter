@@ -1,5 +1,5 @@
 import { WebSocket } from "ws";
-import { createToolCallRequest, createHeartbeatRequest, extractToolResult, parseJsonRpcMessage, stringifyJsonRpcMessage, } from "./protocol.js";
+import { createToolCallRequest, createHeartbeatRequest, createMethodRequest, extractToolResult, parseJsonRpcMessage, stringifyJsonRpcMessage, } from "./protocol.js";
 export class XiaozhiWebSocketClient {
     config;
     ws = null;
@@ -93,6 +93,22 @@ export class XiaozhiWebSocketClient {
                 reject: (e) => { clearTimeout(timer); reject(e); },
             });
             this.send(createToolCallRequest(id, toolName, args));
+        });
+    }
+    async callMethod(method, params = {}) {
+        if (!this.isConnected())
+            return { success: false, error: "Not connected to xiaozhi server" };
+        const id = ++this.requestId;
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this.pendingRequests.delete(id);
+                reject(new Error(`Method call timeout: ${method}`));
+            }, 30000);
+            this.pendingRequests.set(id, {
+                resolve: (r) => { clearTimeout(timer); resolve(r); },
+                reject: (e) => { clearTimeout(timer); reject(e); },
+            });
+            this.send(createMethodRequest(id, method, params));
         });
     }
     send(request) {

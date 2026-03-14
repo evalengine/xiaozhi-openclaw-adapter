@@ -10,6 +10,7 @@ import type {
 import {
   createToolCallRequest,
   createHeartbeatRequest,
+  createMethodRequest,
   extractToolResult,
   parseJsonRpcMessage,
   stringifyJsonRpcMessage,
@@ -122,6 +123,25 @@ export class XiaozhiWebSocketClient {
       });
 
       this.send(createToolCallRequest(id, toolName, args));
+    });
+  }
+
+  async callMethod(method: string, params: Record<string, unknown> = {}): Promise<ToolCallResult> {
+    if (!this.isConnected()) return { success: false, error: "Not connected to xiaozhi server" };
+
+    const id = ++this.requestId;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error(`Method call timeout: ${method}`));
+      }, 30000);
+
+      this.pendingRequests.set(id, {
+        resolve: (r) => { clearTimeout(timer); resolve(r); },
+        reject: (e) => { clearTimeout(timer); reject(e); },
+      });
+
+      this.send(createMethodRequest(id, method, params));
     });
   }
 

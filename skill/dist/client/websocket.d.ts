@@ -18,6 +18,7 @@ export declare class XiaozhiWebSocketClient {
     connect(): Promise<void>;
     disconnect(): void;
     callTool(toolName: string, args: Record<string, unknown>): Promise<ToolCallResult>;
+    callMethod(method: string, params?: Record<string, unknown>): Promise<ToolCallResult>;
     private send;
     private handleMessage;
     private handleDisconnect;

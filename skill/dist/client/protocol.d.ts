@@ -8,6 +8,7 @@ export declare const JsonRpcErrorCodes: {
 };
 export declare function createToolCallRequest(id: number, toolName: string, args: Record<string, unknown>): JsonRpcRequest;
 export declare function createHeartbeatRequest(id: number): JsonRpcRequest;
+export declare function createMethodRequest(id: number, method: string, params?: Record<string, unknown>): JsonRpcRequest;
 export declare function isErrorResponse(r: JsonRpcResponse): r is JsonRpcResponseError;
 export declare function isSuccessResponse(r: JsonRpcResponse): r is JsonRpcResponseSuccess;
 export declare function extractToolResult(response: JsonRpcResponse): ToolCallResult;
